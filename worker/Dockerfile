@@ -1,0 +1,22 @@
+#Use an existing docker image as a base
+FROM node:14.14.0-alpine
+
+#Any subsequent command will be executed
+#relative to this path in the container
+WORKDIR /app
+
+#Move file from local machine into the temporary container
+#First path is path to folder in local FS to path in container
+#first path is relative to the build context (e.g. simpleweb)
+#based on WORKDIR second ./ will be workdir directory
+COPY ./package.json ./
+
+#Download and install a dependency
+#RUN npm cache clean --force
+RUN yarn install
+
+COPY ./ ./
+
+#Tell the image what to do when it starts
+#as a container
+CMD ["yarn", "run", "start"]

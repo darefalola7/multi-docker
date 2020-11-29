@@ -1,0 +1,45 @@
+language: generic
+
+#super user permissions needed
+sudo: true
+
+#install docker service
+services:
+  - docker
+
+#things to do before main tasks are done
+#build docker image for tests
+before_install:
+  - docker build -t damilare77/react-test -f ./client/Dockerfile.dev ./client
+
+#contains all the commands that needs to execute the test suite
+#for testing
+#all tests should be here
+#if this fails the travis build stops
+script:
+  - docker run -e CI=true damilare77/react-test yarn run test -- --coverage
+
+after_success:
+  - docker build -t damilare77/multi-client ./client
+  - docker build -t damilare77/multi-nginx ./nginx
+  - docker build -t damilare77/multi-server ./server
+  - docker build -t damilare77/multi-worker ./worker
+  #login to docker cli
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  #Take those images and push them to docker hub
+  - docker push damilare77/multi-client
+  - docker push damilare77/multi-nginx
+  - docker push damilare77/multi-server
+  - docker push damilare77/multi-worker
+
+deploy:
+  provider: elasticbeanstalk
+  region: "eu-central-1"
+  app: "multidocker"
+  env: "Multidocker-env"
+  bucket_name: "elasticbeanstalk-eu-central-1-161456384528"
+  bucket_path: "multidocker"
+  on:
+    branch: main
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_SECRET_KEY
